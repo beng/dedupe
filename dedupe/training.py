@@ -52,17 +52,14 @@ def activeLearning(candidates,
         nonduplicates.extend(training_pairs[0])
         duplicates.extend(training_pairs[1])
 
-    if training_data.shape[0] == 0 :
+    if training_data.shape[0] == 0:
         rand_int = random.randint(0, len(candidates))
         exact_match = candidates[rand_int]
-        training_data = addTrainingData({1:[exact_match]*2,
-                                         0:[]},
+        training_data = addTrainingData(dict(enumerate([[exact_match] * 2, []])),
                                         data_model,
                                         training_data)
 
     data_model = core.trainModel(training_data, data_model, .1)
-
-
     finished = False
 
     import time
@@ -72,12 +69,11 @@ def activeLearning(candidates,
                  str(time.time() - t_train))
 
     seen_indices = set()
-
-    while finished == False:
+    while not finished:
         logging.info('finding the next uncertain pair ...')
         uncertain_indices = findUncertainPairs(field_distances,
                                                data_model,
-                                               (len(duplicates)/
+                                               (len(duplicates) /
                                                 (len(nonduplicates)+1.0)))
 
         for uncertain_index in uncertain_indices:
@@ -166,23 +162,23 @@ def semiSupervisedNonDuplicates(data_sample,
 
     confidence = 1 - nonduplicate_confidence_threshold
 
-    def distinctPairs() :
+    def distinctPairs():
         data_slice = data_sample[0:sample_size]
         pair_distance = core.fieldDistances(data_slice, data_model)
         scores = core.scorePairs(pair_distance, data_model)
 
         sample_n = 0
-        for score, pair in zip(scores, data_sample) :
-            if score < confidence :
+        for score, pair in zip(scores, data_sample):
+            if score < confidence:
                 yield pair
                 sample_n += 1
 
-        if sample_n < sample_size and len(data_sample) > sample_size :
-            for pair in data_sample[sample_size:] :
+        if sample_n < sample_size and len(data_sample) > sample_size:
+            for pair in data_sample[sample_size:]:
                 pair_distance = core.fieldDistances([pair], data_model)
                 score = core.scorePairs(pair_distance, data_model)
 
-                if score < confidence :
+                if score < confidence:
                     yield (pair)
 
     return islice(distinctPairs(), 0, sample_size)
